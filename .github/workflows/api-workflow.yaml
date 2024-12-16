@@ -16,10 +16,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Check PAT_TOKEN
-      run: echo "PAT_TOKEN=$PAT_TOKEN"
-      env:
-        PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
     - uses: actions/checkout@v4
     - name: Set up Python 3.10
       uses: actions/setup-python@v3
