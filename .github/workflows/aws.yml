@@ -33,16 +33,13 @@ jobs:
 
       # Step 5: Deploy to EC2
       - name: Deploy to EC2
-        uses: appleboy/scp-action@v0.1.4
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_PRIVATE_KEY }}
-          source: "./"  # Copy all project files
-          target: "~/flask_app"  # Deploy to ~/flask_app on EC2
-        run: | 
-          echo "$key" > private_key && chmod 600 private_key
-          ssh -o StrictHostKeyChecking=no -i private_key ${username}@${host} '
+          env: 
+            PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
+            IP_ADDRESS: ${{ secrets.EC2_HOST }}
+            USER_NAME: ${{ secrets.EC2_USER }}
+          run: | 
+            echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
+            ssh -o StrictHostKeyChecking=no -i private_key ${USER_NAME}@${IP_ADDRESS} '
 
               # Now we have got the access of EC2 and we will start the deploy .
               cd /home/ubuntu/ &&
@@ -59,15 +56,45 @@ jobs:
               '
 
 
-      - name: Restart Gunicorn Service
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_PRIVATE_KEY }}
-          script: |
-            cd ~/flask_app
-            source ~/test_for_assignment/bin/activate  
-            pip install -r requirements.txt 
-            sudo systemctl restart test_for_assignment.service  
+
+
+
+
+      #   uses: appleboy/scp-action@v0.1.4
+      #   with:
+      #     host: ${{ secrets.EC2_HOST }}
+      #     username: ${{ secrets.EC2_USER }}
+      #     key: ${{ secrets.EC2_PRIVATE_KEY }}
+      #     source: "./"  # Copy all project files
+      #     target: "~/flask_app"  # Deploy to ~/flask_app on EC2
+      #   run: | 
+      #     echo "$key" > private_key && chmod 600 private_key
+      #     ssh -o StrictHostKeyChecking=no -i private_key ${username}@${host} '
+
+      #         # Now we have got the access of EC2 and we will start the deploy .
+      #         cd /home/ubuntu/ &&
+      #         rm -rf SCA_Devops_Python_Project
+      #         git clone https://github.com/maryjonah/SCA_Devops_Python_Project.git
+      #         cd SCA_Devops_Python_Project
+      #         git checkout master &&
+      #         git reset --hard origin/master &&
+      #         git pull origin master &&
+      #         python3 -m venv venv
+      #         source venv/bin/activate
+      #         pip install -r requirements.txt
+      #         flask run --host=0.0.0.0
+      #         '
+
+
+      # - name: Restart Gunicorn Service
+      #   uses: appleboy/ssh-action@v1.0.0
+      #   with:
+      #     host: ${{ secrets.EC2_HOST }}
+      #     username: ${{ secrets.EC2_USER }}
+      #     key: ${{ secrets.EC2_PRIVATE_KEY }}
+      #     script: |
+      #       cd ~/flask_app
+      #       source ~/test_for_assignment/bin/activate  
+      #       pip install -r requirements.txt 
+      #       sudo systemctl restart test_for_assignment.service  
 
