@@ -41,10 +41,20 @@ jobs:
           echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
           ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i private_key ${USER_NAME}@${IP_ADDRESS} << 'EOF'
           
-          # Go to the project directory
-          cd test_for_assignment || exit 1
-          
+          # Check if the repo directory exists, if not clone it
+          if [ ! -d "/home/ec2-user/test_for_assignment" ]; then
+            echo "Cloning the repository..."
+            git clone https://github.com/Harriet-Hall/test_for_assignment.git /home/ec2-user/test_for_assignment
+          else
+            echo "Repository exists, pulling latest changes..."
+            cd /home/ec2-user/test_for_assignment && git pull origin main
+          fi
+
+          # Navigate to the repo directory
+          cd /home/ec2-user/test_for_assignment
+
           # Pull the latest code
+
           git pull origin main
 
           # Set up virtual environment
