@@ -37,7 +37,7 @@ jobs:
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
           source: "./"  # Copy all project files
           target: "~/flask_app"  # Deploy to ~/flask_app on EC2
 
@@ -46,7 +46,7 @@ jobs:
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
           script: |
             cd ~/flask_app
             source ~/test_for_assignment/bin/activate  # Activate virtual environment
