@@ -33,27 +33,72 @@ jobs:
 
       # Step 5: Deploy to EC2
       - name: Deploy to EC2
-        env: 
+        env:
           PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
           IP_ADDRESS: ${{ secrets.EC2_HOST }}
           USER_NAME: ${{ secrets.EC2_USER }}
-        run: | 
+        run: |
           echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
-          ssh -o StrictHostKeyChecking=no -i private_key ${USER_NAME}@${IP_ADDRESS} '
+          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -tt -i private_key ${USER_NAME}@${IP_ADDRESS} << 'EOF'
+          
+          # Go to the project directory
+          cd test_for_assignment || exit 1
+          
+          # Pull the latest code
+          git pull origin main
 
-            # Now we have got the access of EC2 and we will start the deploy .
-            cd /home/ubuntu/ &&
-            rm -rf SCA_Devops_Python_Project
-            git clone https://github.com/maryjonah/SCA_Devops_Python_Project.git
-            cd SCA_Devops_Python_Project
-            git checkout master &&
-            git reset --hard origin/master &&
-            git pull origin master &&
-            python3 -m venv venv
-            source venv/bin/activate
-            pip install -r requirements.txt
-            flask run --host=0.0.0.0
-            '
+          # Set up virtual environment
+          python3 -m venv venv
+          source venv/bin/activate
 
+          # Install project dependencies
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          
+          # Install and configure NGINX
+          sudo yum install -y nginx
+          sudo tee /etc/nginx/conf.d/test_for_assignment.conf > /dev/null << NGINX_CONF
+          server {
+              listen 80;
+              listen [::]:80;
+              server_name 13-42-62-131;
 
+              location / {
+                  proxy_pass http://localhost:8000;
+                  proxy_set_header Host \$host;
+                  proxy_set_header X-Real-IP \$remote_addr;
+                  proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto \$scheme;
+              }
+          }
+          NGINX_CONF
+          sudo systemctl restart nginx
+          sudo systemctl enable nginx
 
+          # Set up Gunicorn
+          pip install gunicorn
+          sudo tee /etc/systemd/system/gunicorn.service > /dev/null << GUNICORN_CONF
+          [Unit]
+          Description=gunicorn daemon
+          After=network.target
+
+          [Service]
+          User=ec2-user
+          Group=nginx
+          WorkingDirectory=/home/ec2-user/test_for_assignment
+          ExecStart=/home/ec2-user/test_for_assignment/venv/bin/gunicorn --workers 3 --bind 0.0.0.0:8000 app:app
+
+          [Install]
+          WantedBy=multi-user.target
+          GUNICORN_CONF
+
+          # Restart and enable Gunicorn
+          sudo systemctl daemon-reload
+          sudo systemctl restart gunicorn
+          sudo systemctl enable gunicorn
+
+          # Start services
+          sudo systemctl start nginx
+          sudo systemctl enable nginx
+
+          EOF
